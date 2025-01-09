@@ -10,7 +10,11 @@
 # pip install numpy
 
 import pandas
-from mypackage import arithmetics
+try:
+	from mypackage import arithmetics
+except ImportError:
+	print("mypackage is not installed. Please install it to proceed.")
+	arithmetics = None
 import requests
 import numpy
 
