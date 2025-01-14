@@ -21,6 +21,8 @@ async def url():
     return {"url": "https://mouredev.com/python"}
 
 
+
+
 # Clase en vídeo: https://youtu.be/_y9qQZXE24A?t=12475
 #app.include_router(products.router)
 #app.include_router(users.router)
