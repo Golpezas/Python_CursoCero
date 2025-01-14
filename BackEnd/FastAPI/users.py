@@ -22,8 +22,8 @@ def search_user(id: int):
         return {"message": "Usuario no encontrado"}
 
 users_list = [user(id = 1, Nombre = "Antonio", Apellido = "Hernandez", Edad = 42, url = "https://mouredev.com/python"),
-              user(id = 2, Nombre = "Maria", Apellido = "Gonzalez", Edad = 35, url = "https://mouredev123.com/python"),
-              user(id = 3, Nombre = "Pedro", Apellido = "Perez", Edad = 25, url = "https://mouredev321.com/python")]         
+            user(id = 2, Nombre = "Maria", Apellido = "Gonzalez", Edad = 35, url = "https://mouredev123.com/python"),
+            user(id = 3, Nombre = "Pedro", Apellido = "Perez", Edad = 25, url = "https://mouredev321.com/python")]         
 
 @app.get("/usersjson")
 async def usersjson():
@@ -36,11 +36,13 @@ async def users():
     return users_list
 
 #path parameters
+#http://127.0.0.1:8000/user/1
 @app.get("/user/{id}")
 async def user(id: int):
     return search_user(id)
 
 #query parameters
+#http://127.0.0.1:8000/user/?id=2
 @app.get("/user/")
 async def user(id: int):
     return search_user(id)
