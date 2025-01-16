@@ -1,49 +1,63 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import List, Optional
 
 app = FastAPI()
 
-# Inicia el server: uvicorn users:app --reload
+# Inicia el servidor: uvicorn users:app --reload
 
-# Entidad user
+# Entidad User
 
-class user(BaseModel):
+class User(BaseModel):
     id: int
     Nombre: str
     Apellido: str
     Edad: int
     url: str
 
-def search_user(id: int):
-    users = filter(lambda user: user.id == id, users_list)
-    try:
-        return list(users)[0]
-    except:
-        return {"message": "Usuario no encontrado"}
-
-users_list = [user(id = 1, Nombre = "Antonio", Apellido = "Hernandez", Edad = 42, url = "https://mouredev.com/python"),
-            user(id = 2, Nombre = "Maria", Apellido = "Gonzalez", Edad = 35, url = "https://mouredev123.com/python"),
-            user(id = 3, Nombre = "Pedro", Apellido = "Perez", Edad = 25, url = "https://mouredev321.com/python")]         
+users_list = [
+    User(id=1, Nombre="Antonio", Apellido="Hernandez", Edad=42, url="https://mouredev.com/python"),
+    User(id=2, Nombre="Maria", Apellido="Gonzalez", Edad=35, url="https://mouredev123.com/python"),
+    User(id=3, Nombre="Pedro", Apellido="Perez", Edad=25, url="https://mouredev321.com/python")
+]
 
 @app.get("/usersjson")
 async def usersjson():
-    return [{"Nombre": "Antonio", "Apellido": "Hernandez", "Edad": 42, "url": "https://mouredev.com/python"},
-            {"Nombre": "Maria", "Apellido": "Gonzalez", "Edad": 35, "url": "https://mouredev123.com/python"},
-            {"Nombre": "Pedro", "Apellido": "Perez", "Edad": 25, "url": "https://mouredev321.com/python"}]
+    return [
+        {"Nombre": "Antonio", "Apellido": "Hernandez", "Edad": 42, "url": "https://mouredev.com/python"},
+        {"Nombre": "Maria", "Apellido": "Gonzalez", "Edad": 35, "url": "https://mouredev123.com/python"},
+        {"Nombre": "Pedro", "Apellido": "Perez", "Edad": 25, "url": "https://mouredev321.com/python"}
+    ]
 
 @app.get("/users")
 async def users():
     return users_list
 
-#path parameters
-#http://127.0.0.1:8000/user/1
+# Path parameters
 @app.get("/user/{id}")
-async def user(id: int):
-    return search_user(id)
+async def get_user_by_id(id: int):
+    user = search_user(id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return user
 
-#query parameters
-#http://127.0.0.1:8000/user/?id=2
+# Query parameters
 @app.get("/user/")
-async def user(id: int):
-    return search_user(id)
+async def get_user_by_query(id: int):
+    user = search_user(id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return user
 
+def search_user(id: int) -> Optional[User]:
+    for user in users_list:
+        if user.id == id:
+            return user
+    return None
+
+@app.post("/user")
+async def create_user(new_user: User):
+    if search_user(new_user.id):
+        raise HTTPException(status_code=400, detail="Usuario ya existe")
+    users_list.append(new_user)
+    return {"message": "Usuario agregado correctamente"}
