@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 
-app = FastAPI()
+router = APIRouter(prefix="/user", tags=["users/user"])
 
 # Inicia el servidor: uvicorn users:app --reload
 
@@ -21,7 +21,7 @@ users_list = [
     User(id=3, Nombre="Pedro", Apellido="Perez", Edad=25, url="https://mouredev321.com/python")
 ]
 
-@app.get("/usersjson")
+@router.get("/usersjson")
 async def usersjson():
     return [
         {"Nombre": "Antonio", "Apellido": "Hernandez", "Edad": 42, "url": "https://mouredev.com/python"},
@@ -29,12 +29,12 @@ async def usersjson():
         {"Nombre": "Pedro", "Apellido": "Perez", "Edad": 25, "url": "https://mouredev321.com/python"}
     ]
 
-@app.get("/users")
+@router.get("/users")
 async def users():
     return users_list
 
 # Path parameters
-@app.get("/user/{id}")
+@router.get("/{id}")
 async def get_user_by_id(id: int):
     user = search_user(id)
     if user is None:
@@ -42,7 +42,7 @@ async def get_user_by_id(id: int):
     return user
 
 # Query parameters
-@app.get("/user/")
+@router.get("/")
 async def get_user_by_query(id: int):
     user = search_user(id)
     if user is None:
@@ -55,9 +55,25 @@ def search_user(id: int) -> Optional[User]:
             return user
     return None
 
-@app.post("/user")
+@router.post("/")
 async def create_user(new_user: User):
     if search_user(new_user.id):
         raise HTTPException(status_code=400, detail="Usuario ya existe")
     users_list.append(new_user)
     return {"message": "Usuario agregado correctamente"}
+
+@router.put("/")
+async def update_user(user: User):
+    for i in range(len(users_list)):
+        if users_list[i].id == user.id:
+            users_list[i] = user
+            return {"message": "Usuario actualizado correctamente"}
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+@router.delete("/{id}")
+async def delete_user(id: int):
+    for i in range(len(users_list)):
+        if users_list[i].id == id:
+            del users_list[i]
+            return {"message": "Usuario eliminado correctamente"}
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
