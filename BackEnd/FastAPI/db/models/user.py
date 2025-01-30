@@ -5,4 +5,4 @@ class User(BaseModel):
     Nombre: str
     Apellido: str
     Edad: int
-    url: str
+    email: str
