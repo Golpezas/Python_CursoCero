@@ -1,20 +1,19 @@
+# routers/users_db.py
 from fastapi import APIRouter, HTTPException
-from typing import List, Optional
+from typing import List
 from db.models.user import User
-from db.client import db_client
+from db.client import db
 from db.schemas.user import user_schema, users_schema
-from bson import ObjectId, errors
+from bson import ObjectId
 
 router = APIRouter(prefix="/userdb", tags=["userdb"])
-
-# Inicia el servidor: uvicorn users:app --reload
 
 @router.get("/", response_model=List[User])
 async def users():
     """
     Devuelve una lista de todos los usuarios en la base de datos.
     """
-    return users_schema(db_client.local.users.find())
+    return users_schema(db["users"].find())
 
 @router.get("/{id}")
 async def get_user_by_id(id: str):
@@ -40,20 +39,24 @@ async def get_user_by_query(id: str):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return user
 
-@router.post("/")
-async def user(user: User):
+@router.post("/", response_model=User)
+async def create_user(user: User):
     """
     Crea un nuevo usuario en la base de datos.
     """
+    # Verifica si el email ya está en uso
     if search_user("email", user.email) is not None:
         raise HTTPException(status_code=400, detail="El email ya está en uso")
     
-    user_dict = dict(user)
-    del user_dict["id"]
+    # Convierte el usuario a un diccionario y elimina el campo id si existe
+    user_dict = user.dict()
+    user_dict.pop("id", None)
 
-    id = db_client.local.users.insert_one(user_dict).inserted_id
+    # Inserta el nuevo usuario en la base de datos
+    id = db["users"].insert_one(user_dict).inserted_id
 
-    new_user = user_schema(db_client.local.users.find_one({"_id": id}))
+    # Recupera el usuario recién creado
+    new_user = user_schema(db["users"].find_one({"_id": id}))
 
     return User(**new_user)
 
@@ -70,9 +73,9 @@ async def update_user(id: str, user: User):
     user_dict = dict(user)
     del user_dict["id"]
 
-    db_client.local.users.update_one({"_id": ObjectId(id)}, {"$set": user_dict})
+    db["users"].update_one({"_id": ObjectId(id)}, {"$set": user_dict})
 
-    updated_user = user_schema(db_client.local.users.find_one({"_id": ObjectId(id)}))
+    updated_user = user_schema(db["users"].find_one({"_id": ObjectId(id)}))
 
     return User(**updated_user)
 
@@ -86,7 +89,7 @@ async def delete_user(id: str):
     user = search_user("_id", ObjectId(id))
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    db_client.local.users.delete_one({"_id": ObjectId(id)})
+    db["users"].delete_one({"_id": ObjectId(id)})
     return {"message": "Usuario eliminado correctamente"}
 
 def search_user(field: str, key):
@@ -94,7 +97,7 @@ def search_user(field: str, key):
     Busca un usuario en la base de datos por un campo y una clave específicos.
     """
     try:
-        user = db_client.local.users.find_one({field: key})
+        user = db["users"].find_one({field: key})
         return user_schema(user)
     except:
         return None
